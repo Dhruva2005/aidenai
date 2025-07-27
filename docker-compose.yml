@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: adenai-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://sql12.freesqldatabase.com:3306/sql12792194?useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=sql12792194
+      - SPRING_DATASOURCE_PASSWORD=Y5jpTigqBG
+    networks:
+      - adenai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: adenai-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - adenai-network
+    restart: unless-stopped
+
+networks:
+  adenai-network:
+    driver: bridge
+
+volumes:
+  # No database volumes needed since using cloud database
