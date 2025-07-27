@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: adenai-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:mysql://sql12.freesqldatabase.com:3306/sql12792194?useSSL=false&allowPublicKeyRetrieval=true
+      - key: SPRING_DATASOURCE_USERNAME
+        value: sql12792194
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: Y5jpTigqBG
+    plan: free

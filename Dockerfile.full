@@ -1,0 +1,67 @@
+# Multi-stage build for ADENAI Travel Leave System
+
+# Stage 1: Build Backend
+FROM openjdk:17-jdk-alpine AS backend-build
+
+WORKDIR /app/backend
+
+# Copy Maven wrapper and pom.xml
+COPY backend/mvnw .
+COPY backend/mvnw.cmd .
+COPY backend/pom.xml .
+COPY backend/.mvn .mvn
+
+# Copy source code
+COPY backend/src src
+
+# Make mvnw executable and build
+RUN chmod +x ./mvnw
+RUN ./mvnw clean package -DskipTests
+
+# Stage 2: Build Frontend
+FROM node:18-alpine AS frontend-build
+
+WORKDIR /app/frontend
+
+# Copy package files
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code and build
+COPY frontend/src ./src
+COPY frontend/public ./public
+COPY frontend/tsconfig.json .
+COPY frontend/.gitignore .
+
+RUN npm run build
+
+# Stage 3: Final stage with both applications
+FROM openjdk:17-jdk-alpine
+
+WORKDIR /app
+
+# Install nginx
+RUN apk add --no-cache nginx
+
+# Copy backend jar
+COPY --from=backend-build /app/backend/target/travel-leave-system-0.0.1-SNAPSHOT.jar app.jar
+
+# Copy frontend build
+COPY --from=frontend-build /app/frontend/build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx-render.conf /etc/nginx/nginx.conf
+
+# Create nginx directories
+RUN mkdir -p /var/log/nginx /var/lib/nginx/tmp
+
+# Expose port (Render will assign the PORT environment variable)
+EXPOSE $PORT
+
+# Start script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]
