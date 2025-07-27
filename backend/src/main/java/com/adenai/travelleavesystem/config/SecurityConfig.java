@@ -62,7 +62,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/", "/health", "/api/auth/**").permitAll()
                 .requestMatchers("/api/travel/all").hasRole("MANAGER")
                 .requestMatchers("/api/travel/{id}/approve").hasRole("MANAGER")
                 .requestMatchers("/api/travel/{id}/reject").hasRole("MANAGER")
@@ -78,10 +78,24 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        
+        // Parse allowed origins and handle wildcards
+        String[] origins = allowedOrigins.split(",");
+        for (String origin : origins) {
+            origin = origin.trim();
+            if (origin.contains("*.onrender.com")) {
+                // Add specific domains for onrender
+                configuration.addAllowedOrigin("https://aidenai-4.onrender.com");
+                configuration.addAllowedOriginPattern("https://*.onrender.com");
+            } else {
+                configuration.addAllowedOrigin(origin);
+            }
+        }
+        
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
